@@ -4,8 +4,8 @@ import numpy as np
 import json
 from stereovision.calibration import StereoCalibration
 from start_cameras import Start_Cameras
-import jetson.inference
-import jetson.utils
+import jetson_inference
+import jetson_utils
 
 # Depth map default preset
 SWS = 5
@@ -77,14 +77,14 @@ def objectDetection(item):
     y_coord = int(item_coords[1])
     distance = disparity_normalized[y_coord][x_coord]
 
-    #to avoid detection of different objects, we only focus on people which have a ClassID of 1
+    #to avoid detection of different objects, we only focus on people which have a ClassID of 1, full list of available labels is in ../SSD-Mobilenet-v2/ssd_coco_labels.txt
     if item_class == 1:
         print("Person is: {}cm away".format(distance))
 
 #Object Detection model 
-net = jetson.inference.detectNet("ssd-mobilenet-v2", threshold=0.5)
+net = jetson_inference.detectNet("ssd-mobilenet-v2", threshold=0.5)
 
-#net = jetson.inference.detectNet(argv=["--model=/home/aryan/StereoVision/SSD-Mobilenet-v2/ssd_mobilenet_v2_coco.uff",
+#net = jetson_inference.detectNet(argv=["--model=/home/aryan/StereoVision/SSD-Mobilenet-v2/ssd_mobilenet_v2_coco.uff",
 #"--labels=/home/aryan/StereoVision/SSD-Mobilenet-v2/ssd_coco_labels.txt", 
 #"--input-blob=Input", "--output-cvg=NMS", "--output-bbox=NMS_1"], threshold=0.5)
 
@@ -107,7 +107,7 @@ if __name__ == "__main__":
             right_gray_frame = cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)
 
             #calling all calibration results
-            calibration = StereoCalibration(input_folder='calib_result')
+            calibration = StereoCalibration(input_folder='../calib_result')
             rectified_pair = calibration.rectify((left_gray_frame, right_gray_frame))
             disparity_color, disparity_normalized = stereo_depth_map(rectified_pair)
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
             cv2.setMouseCallback("DepthMap", onMouse, disparity_normalized)
            
             #Object detection & distance
-            left_cuda_frame = jetson.utils.cudaFromNumpy(left_frame)
+            left_cuda_frame = jetson_utils.cudaFromNumpy(left_frame)
             detections = net.Detect(left_cuda_frame)
             if len(detections):
                 for item in detections:
