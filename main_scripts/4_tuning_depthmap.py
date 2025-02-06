@@ -10,15 +10,15 @@ from stereovision.calibration import StereoCalibration
 from start_cameras import Start_Cameras
 
 # Depth map function
-SWS = 215
-PFS = 115
-PFC = 43
-MDS = -25
-NOD = 112
-TTH = 100
-UR = 10
-SR = 15
-SPWS = 100
+SWS = 215    # SADWindowSize
+PFS = 115    # preFilterSize
+PFC = 43     # preFilterCap
+MDS = -25    # minDisparity
+NOD = 112    # numberOfDisparities
+TTH = 100    # textureThreshold
+UR = 10      # uniquenessRatio
+SR = 15      # speckleRange
+SPWS = 100   # speckleWindowSize
 
 loading = False
 
@@ -63,7 +63,7 @@ def save_load_map_settings(current_save, current_load, variable_mapping):
                 'uniquenessRatio':variable_mapping['UniqRatio'], 'speckleRange':variable_mapping['SpeckleRange'], 'speckleWindowSize':variable_mapping['SpeckleSize']},
                 sort_keys=True, indent=4, separators=(',',':'))
         fName = '../3dmap_set.txt'
-        f = open (str(fName), 'w')
+        f = open(str(fName), 'w')
         f.write(result)
         f.close()
         print ('Settings saved to file '+fName)
@@ -74,7 +74,7 @@ def save_load_map_settings(current_save, current_load, variable_mapping):
             loading = True
             fName = '../3dmap_set.txt'
             print('Loading parameters from file...')
-            f=open(fName, 'r')
+            f = open(fName, 'r')
             data = json.load(f)
 
             cv2.setTrackbarPos("SWS", "Stereo", data['SADWindowSize'])
