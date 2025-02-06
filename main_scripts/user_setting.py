@@ -14,7 +14,7 @@ countdown = 5  #Interval for count-down timer, seconds
 # 2_image_selection.py
 # 3_calibration.py
 
-img_height = 480
+img_height = 360
 img_width = 640
 
 
