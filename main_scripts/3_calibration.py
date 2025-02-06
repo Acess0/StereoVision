@@ -5,19 +5,23 @@ import json
 from stereovision.calibration import StereoCalibrator
 from stereovision.calibration import StereoCalibration
 from stereovision.exceptions import ChessboardNotFoundError
+from user_settings import total_photos, img_height, img_width, rows, columns, square_size
 
 # Global variables preset
-total_photos = 30
+#total_photos = 30
+
+#Show detected charateristic points? (True=yes, False=no) 
+PREVIEW_DETECTION_RESULTS = True
 
 # Chessboard parameters
 # Must use 6 Rows and 9 Column chessboard
-rows = 6
-columns = 9
-square_size = 2.5
+#rows = 6
+#columns = 9
+#square_size = 2.5
 
-image_size = (640, 360)
+image_size = (img_width, img_height)
 
-#This is the calibraation class from the StereoVision package
+#This is the calibration class from the StereoVision package
 calibrator = StereoCalibrator(rows, columns, square_size, image_size)
 photo_counter = 0
 print('Start cycle')
@@ -48,7 +52,8 @@ while photo_counter != total_photos:
         else:
             #add_corners function from the Class already helps us with cv2.imshow,
             #and hence we don't need to do it seperately 
-            calibrator.add_corners((imgLeft, imgRight), True)
+            ## definition: add_corners(self, image_pair, show_results=False)
+            calibrator.add_corners((imgLeft, imgRight), show_results=PREVIEW_DETECTION_RESULTS)
         
     else:
         print ("Pair not found")
@@ -63,7 +68,7 @@ calibration.export('../calib_result')
 print('Calibration complete!')
 
 # Lets rectify and show last pair after  calibration
-calibration = StereoCalibration(input_folder='calib_result')
+calibration = StereoCalibration(input_folder='../calib_result')
 rectified_pair = calibration.rectify((imgLeft, imgRight))
 
 cv2.imshow('Left Calibrated!', rectified_pair[0])
