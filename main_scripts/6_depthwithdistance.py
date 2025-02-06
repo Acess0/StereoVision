@@ -77,7 +77,8 @@ def objectDetection(item):
     y_coord = int(item_coords[1])
     distance = disparity_normalized[y_coord][x_coord]
 
-    #to avoid detection of different objects, we only focus on people which have a ClassID of 1, full list of available labels is in ../SSD-Mobilenet-v2/ssd_coco_labels.txt
+    #to avoid detection of different objects, we only focus on people which have a ClassID of 1
+    #full list of available labels is in ../SSD-Mobilenet-v2/ssd_coco_labels.txt
     if item_class == 1:
         print("Person is: {}cm away".format(distance))
 
