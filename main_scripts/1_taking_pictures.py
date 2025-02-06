@@ -5,10 +5,11 @@ from datetime import datetime
 import time
 import os
 from os import path
+from user_settings import total_photos, countdown
 
 #Photo Taking presets
-total_photos = 30  # Number of images to take
-countdown = 5  # Interval for count-down timer, seconds
+#total_photos = 30  # Number of images to take
+#countdown = 5  # Interval for count-down timer, seconds
 font = cv2.FONT_HERSHEY_SIMPLEX  # Cowntdown timer font
 
 
