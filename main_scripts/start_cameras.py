@@ -1,121 +1,97 @@
 import cv2
 import numpy as np
+import depthai as dai
 import threading
+import time
 
 class Start_Cameras:
+    # Współdzielone zasoby dla wszystkich instancji
+    _device = None
+    _q_left = None
+    _q_right = None
+    _latest_frames = {0: None, 1: None}
+    _capture_thread = None
+    _lock = threading.Lock()
 
-    def __init__(self, sensor_id):
-        # Initialize instance variables
-        # OpenCV video capture element
-        self.video_capture = None
-        # The last captured image from the camera
-        self.frame = None
-        self.grabbed = False
-        # The thread where the video capture runs
-        self.read_thread = None
-        self.read_lock = threading.Lock()
-        self.running = False
+    def __init__(self, cam_id):
+        """
+        Konstruktor przyjmujący identyfikator kamery:
+         0 - kamera lewa,
+         1 - kamera prawa.
+        """
+        if cam_id not in [0, 1]:
+            raise ValueError("Wrong camera ID.")
+        self.cam_id = cam_id
+        with Start_Cameras._lock:
+            if Start_Cameras._device is None:
+                self._init_device()
 
-        self.sensor_id = sensor_id
+    @staticmethod
+    def _init_device():
+        pipeline = dai.Pipeline()
 
-        gstreamer_pipeline_string = self.gstreamer_pipeline()
-        self.open(gstreamer_pipeline_string)
+        # Konfiguracja lewej kamery mono
+        cam_left = pipeline.create(dai.node.MonoCamera)
+        cam_left.setBoardSocket(dai.CameraBoardSocket.LEFT)
+        cam_left.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
 
-    #Opening the cameras
-    def open(self, gstreamer_pipeline_string):
-        gstreamer_pipeline_string = self.gstreamer_pipeline()
-        try:
-            self.video_capture = cv2.VideoCapture(
-                gstreamer_pipeline_string, cv2.CAP_GSTREAMER
-            )
-            grabbed, frame = self.video_capture.read()
-            print("Cameras are opened")
+        # Konfiguracja prawej kamery mono
+        cam_right = pipeline.create(dai.node.MonoCamera)
+        cam_right.setBoardSocket(dai.CameraBoardSocket.RIGHT)
+        cam_right.setResolution(dai.MonoCameraProperties.SensorResolution.THE_480_P)
 
-        except RuntimeError:
-            self.video_capture = None
-            print("Unable to open camera")
-            print("Pipeline: " + gstreamer_pipeline_string)
-            return
-        # Grab the first frame to start the video capturing
-        self.grabbed, self.frame = self.video_capture.read()
+        # Utworzenie wyjść XLink
+        xout_left = pipeline.create(dai.node.XLinkOut)
+        xout_left.setStreamName("left")
+        cam_left.out.link(xout_left.input)
 
-    #Starting the cameras
+        xout_right = pipeline.create(dai.node.XLinkOut)
+        xout_right.setStreamName("right")
+        cam_right.out.link(xout_right.input)
+
+        # Połączenie z urządzeniem i uzyskanie kolejki następnych ramek
+        Start_Cameras._device = dai.Device(pipeline)
+        Start_Cameras._q_left = Start_Cameras._device.getOutputQueue(name="left", maxSize=4, blocking=False)
+        Start_Cameras._q_right = Start_Cameras._device.getOutputQueue(name="right", maxSize=4, blocking=False)
+
+        # Uruchomienie wątku do ciągłego pobierania ramek
+        Start_Cameras._capture_thread = threading.Thread(target=Start_Cameras._capture_loop, daemon=True)
+        Start_Cameras._capture_thread.start()
+
+    @staticmethod
+    def _capture_loop():
+        while True:
+            # Pobranie ramki z lewej kamery przy użyciu tryGet()
+            frame_left_packet = Start_Cameras._q_left.tryGet()
+            if frame_left_packet is not None:
+                frame_left = frame_left_packet.getFrame()
+                frame_left = cv2.cvtColor(frame_left, cv2.COLOR_GRAY2BGR)
+                Start_Cameras._latest_frames[0] = frame_left
+
+            # Pobranie ramki z prawej kamery przy użyciu tryGet()
+            frame_right_packet = Start_Cameras._q_right.tryGet()
+            if frame_right_packet is not None:
+                frame_right = frame_right_packet.getFrame()
+                frame_right = cv2.cvtColor(frame_right, cv2.COLOR_GRAY2BGR)
+                Start_Cameras._latest_frames[1] = frame_right
+
+ #           	time.sleep(0.01)
+
     def start(self):
-        if self.running:
-            print('Video capturing is already running')
-            return None
-        # create a thread to read the camera image
-        if self.video_capture != None:
-            self.running = True
-            self.read_thread = threading.Thread(target=self.updateCamera, daemon=True)
-            self.read_thread.start()
         return self
 
-    def stop(self):
-        self.running = False
-        self.read_thread.join()
-
-    def updateCamera(self):
-        # This is the thread to read images from the camera
-        while self.running:
-            try:
-                grabbed, frame = self.video_capture.read()
-                with self.read_lock:
-                    self.grabbed = grabbed
-                    self.frame = frame
-            except RuntimeError:
-                print("Could not read image from camera")
-
     def read(self):
-        with self.read_lock:
-            frame = self.frame.copy()
-            grabbed = self.grabbed
-        return grabbed, frame
-
-    def release(self):
-        if self.video_capture != None:
-            self.video_capture.release()
-            self.video_capture = None
-        # Now kill the thread
-        if self.read_thread != None:
-            self.read_thread.join()
-
-    # Currently there are setting frame rate on CSI Camera on Nano through gstreamer
-    # Here we directly select sensor_mode 3 (1280x720, 59.9999 fps)
-    # sensor_mode 1(2592 x 1944, 29.999999 fps) 
-    # sensor_mode 2(2592 x 1458, 29.999999 fps) 
-    def gstreamer_pipeline(self,
-            sensor_mode=3,
-            capture_width=1280,
-            capture_height=720,
-            display_width=640,
-            display_height=360,
-            framerate=30,
-            flip_method=0,
-    ):
-        return (
-                "nvarguscamerasrc sensor-id=%d sensor-mode=%d ! "
-                "video/x-raw(memory:NVMM), "
-                "width=(int)%d, height=(int)%d, "
-                "format=(string)NV12, framerate=(fraction)%d/1 ! "
-                "nvvidconv flip-method=%d ! "
-                "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
-                "videoconvert ! "
-                "video/x-raw, format=(string)BGR ! appsink"
-                % (
-                    self.sensor_id,
-                    sensor_mode,
-                    capture_width,
-                    capture_height,
-                    framerate,
-                    flip_method,
-                    display_width,
-                    display_height,
-                )
-        )
+        """
+        Zwraca krotkę (grabbed, frame):
+          - grabbed: True, jeśli klatka jest dostępna, False w przeciwnym przypadku.
+          - frame: obraz z kamery lub None.
+        """
+        frame = Start_Cameras._latest_frames[self.cam_id]
+        if frame is None:
+            return False, None
+        return True, frame
 
 
-#This is the main. Read this first. 
 if __name__ == "__main__":
     left_camera = Start_Cameras(0).start()
     right_camera = Start_Cameras(1).start()
@@ -124,18 +100,16 @@ if __name__ == "__main__":
         left_grabbed, left_frame = left_camera.read()
         right_grabbed, right_frame = right_camera.read()
 
-        if left_grabbed and right_grabbed:
-            images = np.hstack((left_frame, right_frame))
-            cv2.imshow("Camera Images", images)
-            k = cv2.waitKey(1) & 0xFF
+        # Jeśli klatki nie zostały jeszcze pobrane, pomiń iterację
+        if not left_grabbed or not right_grabbed:
+            continue
 
-            if k == ord('q'):
-                break
-        else:
+        combined = np.hstack((left_frame, right_frame))
+        cv2.imshow("OAK-D Lite: Left + Right Cameras", combined)
+
+        if cv2.waitKey(1) == ord('q'):
             break
 
-    left_camera.stop()
-    left_camera.release()
-    right_camera.stop()
-    right_camera.release()
     cv2.destroyAllWindows()
+    Start_Cameras.stop()
+
