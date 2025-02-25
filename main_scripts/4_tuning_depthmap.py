@@ -1,4 +1,3 @@
-#Tune your depth map with real-time video from the cameras.
 import cv2
 import os
 import threading
@@ -9,7 +8,6 @@ import json
 from stereovision.calibration import StereoCalibration
 from start_cameras import Start_Cameras
 
-# Depth map function
 SWS = 215    # SADWindowSize
 PFS = 115    # preFilterSize
 PFC = 43     # preFilterCap
@@ -25,12 +23,7 @@ loading = False
 
 def stereo_depth_map(rectified_pair, variable_mapping):
 
-    '''print ('SWS='+str(SWS)+' PFS='+str(PFS)+' PFC='+str(PFC)+' MDS='+\
-           str(MDS)+' NOD='+str(NOD)+' TTH='+str(TTH))
-    print (' UR='+str(UR)+' SR='+str(SR)+' SPWS='+str(SPWS))'''
-
-    #blockSize is the SAD Window Size
-    #Filter settings
+    # Ustawienia parametrów
     sbm = cv2.StereoBM_create(numDisparities=16, blockSize=variable_mapping["SWS"]) 
     sbm.setPreFilterType(1)    
     sbm.setPreFilterSize(variable_mapping['PreFiltSize'])
@@ -42,16 +35,19 @@ def stereo_depth_map(rectified_pair, variable_mapping):
     sbm.setTextureThreshold(variable_mapping['TxtrThrshld'])
     sbm.setUniquenessRatio(variable_mapping['UniqRatio'])
     
-
+    # Wczytywanie obrazów po rektyfikacji
     c, r = rectified_pair[0].shape
     dmLeft = rectified_pair[0]
     dmRight = rectified_pair[1]
-    disparity = sbm.compute(dmLeft, dmRight)
+    # Obliczanie mapy dysparycji
+    disparity = sbm.compute(dmLeft, dmRight).astype(np.float32) / 23.0
+    # Dla wizualizacji – normalizujemy do zakresu 0-255
     disparity_normalized = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
-    #Convering Numpy Array to CV_8UC1
-    image = np.array(disparity_normalized, dtype = np.uint8)
-    disparity_color = cv2.applyColorMap(image, cv2.COLORMAP_JET)
-    return disparity_color, disparity_normalized
+    disparity_normalized = np.array(disparity_normalized, dtype=np.uint8)
+    disparity_color = cv2.applyColorMap(disparity_normalized, cv2.COLORMAP_JET)
+    # Zwracamy mapę kolorową do wyświetlania oraz mapę dysparycji do obliczeń
+    return disparity_color, disparity
+
 
 def save_load_map_settings(current_save, current_load, variable_mapping):
     global loading
@@ -103,8 +99,6 @@ def activateTrackbars(x):
 def create_trackbars() :
     global loading
 
-    #SWS cannot be larger than the image width and image heights.
-    #In this case, width = 320 and height = 240
     cv2.createTrackbar("SWS", "Stereo", 115, 230, activateTrackbars)
     cv2.createTrackbar("SpeckleSize", "Stereo", 0, 300, activateTrackbars)
     cv2.createTrackbar("SpeckleRange", "Stereo", 0, 40, activateTrackbars)
@@ -117,18 +111,30 @@ def create_trackbars() :
     cv2.createTrackbar("Save Settings", "Stereo", 0, 1, activateTrackbars)
     cv2.createTrackbar("Load Settings","Stereo", 0, 1, activateTrackbars)
 
-def onMouse(event, x, y, flag, disparity_normalized):
+def onMouse(event, x, y, flags, param):
+    disparity = param
     if event == cv2.EVENT_LBUTTONDOWN:
-        distance = disparity_normalized[y][x]
-        print("Distance in centimeters {}".format(distance))
-
+        d = disparity[y, x]
+        if d <= 0:
+            print("Disparity is 0 or invalid at this point, cannot compute distance")
+        else:
+            # Oblicz dystans: (focal_length * baseline) / disparity
+            dist = (focal_length * baseline) / d
+            print("Distance: {:.1f} centimeters".format(dist))
+        return dist
 
 
 if __name__ == '__main__':
+    cam_mat_left = np.load("../calib_result/cam_mats_left.npy")
+    focal_length = cam_mat_left[0, 0]  # przyjmujemy focal_length jako element [0,0]
+    T = np.load("../calib_result/trans_vec.npy")
+    baseline = np.linalg.norm(T)  # baseline w centymetrach
+    #print("Focal length: {:.2f} px, Baseline: {:.2f}".format(focal_length, baseline))
+    
     left_camera = Start_Cameras(0).start()
     right_camera = Start_Cameras(1).start()
 
-    # Initialise trackbars and windows
+    # Inicjalizacja suwaków i okien
     cv2.namedWindow("Stereo")
     create_trackbars()
 
@@ -150,8 +156,8 @@ if __name__ == '__main__':
 
             calibration = StereoCalibration(input_folder='../calib_result')
             rectified_pair = calibration.rectify((left_gray_frame, right_gray_frame))
-
-            #getting trackbar position and assigning to the variables
+            
+            # Uzyskiwanie pozycji suwaków i przypisywanie ich wartości do zmiennych
             if loading == False:
                 for v in variables:
                     current_value = cv2.getTrackbarPos(v, "Stereo")
@@ -175,33 +181,29 @@ if __name__ == '__main__':
 
 
             
-           #getting save and load trackbar positions
-
+           # Zapisywanie i odczytywanie parametrów mapy głębi
             current_save = cv2.getTrackbarPos("Save Settings", "Stereo")
             current_load = cv2.getTrackbarPos("Load Settings", "Stereo")
  
             save_load_map_settings(current_save, current_load, variable_mapping)
             cv2.setTrackbarPos("Save Settings", "Stereo", 0)
             cv2.setTrackbarPos("Load Settings", "Stereo", 0)
-            disparity_color, disparity_normalized = stereo_depth_map(rectified_pair, variable_mapping)
+            disparity_color, disparity = stereo_depth_map(rectified_pair, variable_mapping)
+            depth_matrix = np.where(disparity > 0, (focal_length * baseline) / disparity, 0)
 
-            #What happens when the mouse is clicked
-            cv2.setMouseCallback("Stereo", onMouse, disparity_normalized)
+            # Wywoływanie fukcji onMouse 
+            cv2.setMouseCallback("Stereo", onMouse, disparity)
                       
             cv2.imshow("Stereo", disparity_color)
             cv2.imshow("Frame", np.hstack((rectified_pair[0], rectified_pair[1])))
             
             k = cv2.waitKey(1) & 0xFF
             if k == ord('q'):
-                break
+            
+              break
 
-            else:
-                continue
+            continue
 
-    left_camera.stop()
-    left_camera.release()
-    right_camera.stop()
-    right_camera.release()
     cv2.destroyAllWindows()
                 
 
