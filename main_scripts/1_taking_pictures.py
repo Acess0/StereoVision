@@ -7,15 +7,13 @@ import os
 from os import path
 from user_settings import total_photos, countdown
 
-#Photo Taking presets
-#total_photos = 30  # Number of images to take
-#countdown = 5  # Interval for count-down timer, seconds
-font = cv2.FONT_HERSHEY_SIMPLEX  # Cowntdown timer font
+
+font = cv2.FONT_HERSHEY_SIMPLEX  # Font do countdown_timer
 
 
 def TakePictures():
     val = input("Would you like to start the image capturing? (Y/N) ")
-
+# Wcisniecie y zainicjalizuje kamery, pokaz podglad i zacznie odliczanie do zrobienia zdjecia.
     if val.lower() == "y":
         left_camera = Start_Cameras(0).start()
         right_camera = Start_Cameras(1).start()
@@ -23,8 +21,9 @@ def TakePictures():
 
         counter = 0
         t2 = datetime.now()
+        # Petla przechwytywania zdjec
         while counter <= total_photos:
-            #setting the countdown
+            # Ustawianie odliczania 
             t1 = datetime.now()
             countdown_timer = countdown - int((t1 - t2).total_seconds())
 
@@ -32,33 +31,33 @@ def TakePictures():
             right_grabbed, right_frame = right_camera.read()
 
             if left_grabbed and right_grabbed:
-                #combine the two images together
+                # Łączenie ramek
                 images = np.hstack((left_frame, right_frame))
-                #save the images once the countdown runs out
+                # Gdy skończy się odliczanie zegara “countdown”:
+                # inkrementacja licznika zdjęć,
+                # zapisanie obrazu w katalogu ../images/
                 if countdown_timer == -1:
                     counter += 1
                     print(counter)
 
-                 #Check if directory exists. Save image if it exists. Create folder and then save images if it doesn't
+                 # Sprawdź czy istnieje katalog. Zapisz zdjęcie jeśli istnieje, utwórz folder i zapisz zdjęcie jeśli nie ma utworzonego katalogu
                     if path.isdir('../images') == True:
-                        #zfill(2) is used to ensure there are always 2 digits, eg 01/02/11/12
                         filename = "../images/image_" + str(counter).zfill(2) + ".png"
                         cv2.imwrite(filename, images)
                         print("Image: " + filename + " is saved!")
                     else:
-                        #Making directory
+                        # Tworzenie katalogu
                         os.makedirs("../images")
                         filename = "../images/image_" + str(counter).zfill(2) + ".png"
                         cv2.imwrite(filename, images)
                         print("Image: " + filename + " is saved!")
 
                     t2 = datetime.now()
-                    #suspends execution for a few seconds
+                    # Wstrzymaj działanie na 1 sek
                     time.sleep(1)
                     countdown_timer = 0
                     next
-                    
-                #Adding the countdown timer on the images and showing the images
+                # Wyświetlanie odliczania i pokazywanie zdjęć    
                 cv2.putText(images, str(countdown_timer), (50, 50), font, 2.0, (0, 0, 255), 4, cv2.LINE_AA)
                 cv2.imshow("Images", images)
 
@@ -76,10 +75,6 @@ def TakePictures():
     else:
         print ("Please try again! ")
 
-    left_camera.stop()
-    left_camera.release()
-    right_camera.stop()
-    right_camera.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
