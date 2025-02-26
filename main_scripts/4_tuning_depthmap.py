@@ -40,7 +40,7 @@ def stereo_depth_map(rectified_pair, variable_mapping):
     dmLeft = rectified_pair[0]
     dmRight = rectified_pair[1]
     # Obliczanie mapy dysparycji
-    disparity = sbm.compute(dmLeft, dmRight).astype(np.float32) / 23.0
+    disparity = sbm.compute(dmLeft, dmRight).astype(np.float32) / 16.0
     # Dla wizualizacji – normalizujemy do zakresu 0-255
     disparity_normalized = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
     disparity_normalized = np.array(disparity_normalized, dtype=np.uint8)
