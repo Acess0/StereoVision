@@ -58,7 +58,7 @@ def stereo_depth_map(rectified_pair):
     dmRight = rectified_pair[1]
 
     # Oblicz  mapę dysparycji; StereoBM zwraca CV_16S, dlatego konwertujemy do float32
-    disparity = sbm.compute(dmLeft, dmRight).astype(np.float32) / 23.0
+    disparity = sbm.compute(dmLeft, dmRight).astype(np.float32) / 17.0
 
     # Dla wizualizacji – normalizujemy do zakresu 0-255
     disparity_normalized = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
@@ -127,7 +127,7 @@ if __name__ == "__main__":
             # Nałożenie mapy dysparycji na oryginalny obraz dla wizualizacji
             if left_frame.shape != disparity_color.shape:
              disparity_color = cv2.resize(disparity_color, (left_frame.shape[1], left_frame.shape[0]))
-             output = cv2.addWeighted(left_frame, 0.5, disparity_color, 0.5, 0.0)
+            output = cv2.addWeighted(left_frame, 0.5, disparity_color, 0.5, 0.0)
 
             cv2.imshow("DepthMap", np.hstack((disparity_color, output)))																																																																							
 
@@ -147,7 +147,7 @@ if __name__ == "__main__":
                         filename = "../depth/depth_map"  + ".png"
                         cv2.imwrite(filename, depth_matrix)
                         print("Depth map: " + filename + " is saved!")
-                    else:
+                else:
                         # Tworzenie katalogu
                         os.makedirs("../depth")
                         filename = "../depth/depth_map"  + ".png"
