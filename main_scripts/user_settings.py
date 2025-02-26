@@ -14,9 +14,9 @@ countdown = 5  # Czas na wykonanie zdjęcia
 # 2_image_selection.py
 # 3_calibration.py
 #dai.MonoCameraProperties.SensorResolution.THE_480_P)
-img_height = 460
+img_height = 480
 img_width = 640
-photo_height = 460
+photo_height = 480
 photo_width = 1280
 #(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 #img_height = 400
