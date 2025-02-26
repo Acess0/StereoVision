@@ -1,4 +1,6 @@
 cython
-numpy==1.19.4
-cv2==4.10.0-dev
-StereoVision==1.0.4
+numpy
+cv2
+StereoVision
+opencv-python 
+virtualenv
