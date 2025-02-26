@@ -4,7 +4,7 @@ import os
 import json
 from stereovision.calibration import StereoCalibration
 from start_cameras import Start_Cameras
-
+from os import path
 SWS = 5      # SADWindowSize
 PFS = 5      # preFilterSize
 PFC = 29     # preFilterCap
@@ -144,13 +144,13 @@ if __name__ == "__main__":
              #cv2.imwrite("../disparity/depth_matrix.png", depth_matrix)
              # Zapisywanie mapy głębi w formacie .png do katalogu ../depth/
                 if path.isdir('../depth') == True:
-                        filename = "../depth/depth_" + str(counter).zfill(2) + ".png"
+                        filename = "../depth/depth_map"  + ".png"
                         cv2.imwrite(filename, depth_matrix)
                         print("Depth map: " + filename + " is saved!")
                     else:
                         # Tworzenie katalogu
                         os.makedirs("../depth")
-                        filename = "../depth/depth_" + str(counter).zfill(2) + ".png"
+                        filename = "../depth/depth_map"  + ".png"
                         cv2.imwrite(filename, depth_matrix)
                         print("Depth map: " + filename + " is saved!")
             continue
