@@ -58,7 +58,7 @@ def stereo_depth_map(rectified_pair):
     dmRight = rectified_pair[1]
 
     # Oblicz  mapę dysparycji; StereoBM zwraca CV_16S, dlatego konwertujemy do float32
-    disparity = sbm.compute(dmLeft, dmRight).astype(np.float32) / 17.0
+    disparity = sbm.compute(dmLeft, dmRight).astype(np.float32) / 16.0
 
     # Dla wizualizacji – normalizujemy do zakresu 0-255
     disparity_normalized = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
