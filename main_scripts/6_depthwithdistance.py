@@ -55,6 +55,8 @@ def stereo_depth_map(rectified_pair):
     disparity_normalized = cv2.normalize(disparity, None, 0, 255, cv2.NORM_MINMAX)
     disparity_normalized = np.array(disparity_normalized, dtype=np.uint8)
     disparity_color = cv2.applyColorMap(disparity_normalized, cv2.COLORMAP_JET)
+
+
     return disparity_color, disparity
     
 
@@ -105,6 +107,8 @@ if __name__ == "__main__":
                 calibration = StereoCalibration(input_folder='../calib_result')
                 rectified_pair = calibration.rectify((left_gray, right_gray))
                 disparity_color, disparity = stereo_depth_map(rectified_pair)
+                disparity_color = cv2.resize(disparity_color, (left_frame.shape[1], left_frame.shape[0]))
+                disparity = cv2.resize(disparity, (left_frame.shape[1], left_frame.shape[0]))
 
                 cv2.setMouseCallback("DepthMap", onMouse, disparity)
 
@@ -132,14 +136,14 @@ if __name__ == "__main__":
                     
                     # Oblicz dystans i pobierz klase
                     d = disparity[center_y, center_x]
-                    dist = (focal_length * baseline) / d
+                    distance = (focal_length * baseline) / d
                     label_name = coco_labels[class_id]
 
                     # Narysuj bounding box i wypisz etykiete
                     cv2.rectangle(left_frame, (left, top), (right, bottom), (0, 255, 0), 2)
-                    label_text = f"{label_name}: {dist:.1f}cm"
+                    label_text = f"{label_name}: {distance:.1f}cm"
                     cv2.putText(left_frame, label_text, (left, top - 10),
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
                 # Wyświetl przetworzony obraz
                 left_stacked = cv2.addWeighted(left_frame, 0.5, disparity_color, 0.5, 0)
