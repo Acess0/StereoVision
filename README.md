@@ -13,7 +13,7 @@ All the scipts that we will run are in the **main_scripts** directory
 In **main_scripts**:
 
 ### start_cameras.py
-## Updated
+**Updated**  
 Starts the OAK-D Lite cameras on Jetson Nano with DepthAI library. <br /> To change camera capture or display resolution, use this script. 
 
 ### 1_taking_pictures.py
@@ -60,7 +60,7 @@ To make things more interesting, I decided to combine a SSD-Mobilenet-v2 model r
 
 
 ## DepthAI library
-## Updated
+**Updated**  
 DepthAI installation : https://docs.luxonis.com/software/depthai/manual-install/
 
 DepthAI camera node: https://docs.luxonis.com/software/depthai-components/nodes/camera/
