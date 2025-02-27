@@ -13,7 +13,8 @@ All the scipts that we will run are in the **main_scripts** directory
 In **main_scripts**:
 
 ### start_cameras.py
-Starts the Raspberry Pi cameras on the Jetson Nano using a Gstreamer pipeline. <br /> To change camera capture or display resolution, use this script. 
+**UPDATED**
+Starts the OAK-D Lite cameras on Jetson Nano with DepthAI library. <br /> To change camera capture or display resolution, use this script. 
 
 ### 1_taking_pictures.py
 A continuous program to take 30 pictures at 5 second intervals for calibration. This is where pictures of the Chessboard will be taken.<br /> You can change the interval between pictures and also the total number of pictures you want to take. 
@@ -58,24 +59,13 @@ To make things more interesting, I decided to combine a SSD-Mobilenet-v2 model r
 
 
 
-## Sources
-**Raspberry Pi**
+## DepthAI library
+**UPDATED**
+DepthAI installation : https://docs.luxonis.com/software/depthai/manual-install/
 
-Tutorial: https://stereopi.com/blog/opencv-and-depth-map-stereopi-tutorial
-
-GitHub: https://github.com/realizator/stereopi-tutorial
-
-**Jetson Hacks** - Used to start cameras
-
-Tutorial Video: https://www.youtube.com/watch?v=GQ3drRllX3I
-
-GitHub: https://github.com/JetsonHacksNano/CSI-Camera
-
-**Shoutout to my Colleagues at GovTech Singapore for providing support during my internship!**
-
+DepthAI camera node: https://docs.luxonis.com/software/depthai-components/nodes/camera/
 
 ## StereoVision Library
 GitHub: https://github.com/erget/StereoVision
 
 PyPi: https://pypi.org/project/StereoVision/
-
